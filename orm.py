@@ -1,14 +1,37 @@
 import sqlalchemy as sq
 from sqlalchemy import create_engine
+import configparser
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from pprint import pprint
 import json
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
+db_name = config['DB']['db_name']
+user = config['DB']['user']
+password = config['DB']['password']
 
-DSN = 'postgresql://postgres:Toxin190781@localhost:5432/orm'  # DataSourceName = строка подключения к PostgreSQL
-Base = declarative_base()  # создаём базовый класс, который будет наследоваться
-engine = create_engine(DSN)  # позволяет создать движок, абстракция для подключения к БД
+DSN = f'postgresql://{user}:{password}@localhost:5432/{db_name}'
+Base = declarative_base()
+engine = create_engine(DSN)
 connection = engine.connect()
+
+# OR
+
+# DSN = 'postgresql://postgres:secret_password@localhost:5432/orm'  # DataSourceName = строка подключения к PostgreSQL
+# Base = declarative_base()  # создаём базовый класс, который будет наследоваться
+# engine = create_engine(DSN)  # позволяет создать движок, абстракция для подключения к БД
+# connection = engine.connect()
+
+# OR
+
+# user = input('Enter user name: ')
+# password = input('Enter password: ')
+# db_name = input('Enter database name: ')
+# DSN = 'postgresql://' + user + ':' + password + '@localhost:5432/' + db_name  # DataSourceName = строка подключения к PostgreSQL
+# Base = declarative_base()   # создаём базовый класс, который будет наследоваться
+# engine = create_engine(DSN) # позволяет создать движок, абстракция для подключения к БД
+# connection = engine.connect()
 
 
 # класс Base регистрирует всех своих наследников и затем с помощью зарегистрированных объектов создает таблицы в БД
@@ -75,11 +98,6 @@ def create_tables(engine):
     Base.metadata.create_all(engine)  # метод create_all создаст все таблицы в БД
 
 
-create_tables(engine)
-
-Session = sessionmaker(engine)
-session = Session()
-
 publishers = []
 books = []
 shops = []
@@ -116,18 +134,34 @@ def select_publisher():
 
 
 def select_shop():
-    result = connection.execute(
-        'SELECT name '
-        'FROM (select shop_id '
-        'FROM (select book.id '
-        'FROM book '
-        'where publisher_id = 1) q1 '
-        'left join stock s on q1.id = s.book_id) q2 '
-        'left join shop sh on q2.shop_id = sh.id '
-        'GROUP BY name;'
-    ).fetchall()
-    pprint(result)
+    publ = input('Please, enter publisher ID or name: ')
+    if publ.isdigit():
+        res = session.query(Shop).join(Stock).join(Book).join(Publisher).filter(Publisher.id==publ).all()
+    else:
+        res = session.query(Shop).join(Stock).join(Book).join(Publisher).filter(Publisher.name.ilike(f'%{publ}%')).all()
+    for i in res:
+        print(i.name)
 
+
+# OR
+
+#def select_shop():
+    #result = connection.execute(
+        #'SELECT name '
+        #'FROM (select shop_id '
+        #'FROM (select book.id '
+        #'FROM book '
+        #'where publisher_id = 1) q1 '
+        #'left join stock s on q1.id = s.book_id) q2 '
+        #'left join shop sh on q2.shop_id = sh.id '
+        #'GROUP BY name;'
+    #).fetchall()
+    #pprint(result)
+
+
+create_tables(engine)
+Session = sessionmaker(engine)
+session = Session()
 
 session.add_all(publishers)
 session.add_all(books)
