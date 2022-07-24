@@ -1,20 +1,27 @@
 import sqlalchemy as sq
 from sqlalchemy import create_engine
-import configparser
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from pprint import pprint
 import json
+from config import DB_URI
+# import configparser
 
-config = configparser.ConfigParser()
-config.read('settings.ini')
-db_name = config['DB']['db_name']
-user = config['DB']['user']
-password = config['DB']['password']
 
-DSN = f'postgresql://{user}:{password}@localhost:5432/{db_name}'
+DSN = DB_URI
+
 Base = declarative_base()
 engine = create_engine(DSN)
 connection = engine.connect()
+
+# OR
+
+#config = configparser.ConfigParser()
+#config.read('settings.ini')
+#db_name = config['DB']['db_name']
+#user = config['DB']['user']
+#password = config['DB']['password']
+
+#DSN = f'postgresql://{user}:{password}@localhost:5432/{db_name}'
 
 # OR
 
